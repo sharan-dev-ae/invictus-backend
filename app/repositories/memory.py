@@ -32,10 +32,18 @@ class MemoryRepository:
     def create_milestone(self,body,owner_id):
         x={"id":str(uuid4()),**body.model_dump(),"completed":False};self.milestones.append(x);return x
     def create_task(self,body,owner_id):
-        x={"id":str(uuid4()),**body.model_dump(),"completed":False,"position":len(self.tasks)};self.tasks.append(x);return x
+        x={"id":str(uuid4()),**body.model_dump(),"completed":False,"status":"Pending","accumulated_seconds":0,"started_at":None,"position":len(self.tasks)};self.tasks.append(x);return x
     def update_task(self,task_id,changes,owner_id):
         x=next((x for x in self.tasks if x["id"]==task_id),None)
-        if x:x.update(changes)
+        if x:
+            status=changes.get("status")
+            if status and status!=x["status"]:
+                now=datetime.now()
+                if x["started_at"] and status in ("On Hold","Completed","Pending"):
+                    started=datetime.fromisoformat(x["started_at"]);x["accumulated_seconds"]+=max(0,int((now-started).total_seconds()));x["started_at"]=None
+                if status=="In Progress" and not x["started_at"]:x["started_at"]=now.isoformat()
+                x["status"]=status;x["completed"]=status=="Completed"
+            x.update({k:v for k,v in changes.items() if k!="status"})
         return x
     def delete_task(self,task_id,owner_id):
         before=len(self.tasks);self.tasks=[x for x in self.tasks if x["id"]!=task_id];return len(self.tasks)<before

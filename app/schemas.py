@@ -13,6 +13,6 @@ class ProjectIn(BaseModel):
 class MilestoneIn(BaseModel):
     title:str=Field(min_length=1,max_length=200);project_id:str|None=None;due_date:str|None=None
 class TaskIn(BaseModel):
-    title:str=Field(min_length=1,max_length=250);project_id:str|None=None;milestone_id:str|None=None
+    title:str=Field(min_length=1,max_length=250);project_id:str|None=None;milestone_id:str|None=None;estimated_minutes:int=Field(default=30,ge=1,le=10080)
 class PromptIn(BaseModel):
     prompt:str=Field(min_length=3,max_length=5000);project_id:str|None=None;milestone_id:str|None=None

@@ -24,7 +24,7 @@ class Plan(Base):
 class Task(Base):
     __tablename__="tasks"
     id:Mapped[uuid.UUID]=mapped_column(UUID(as_uuid=True),primary_key=True,default=uuid.uuid4);owner_id:Mapped[uuid.UUID|None]=mapped_column(UUID(as_uuid=True),nullable=True,index=True);plan_id:Mapped[uuid.UUID|None]=mapped_column(ForeignKey("plans.id",ondelete="SET NULL"),nullable=True,index=True);project_id:Mapped[uuid.UUID|None]=mapped_column(ForeignKey("projects.id",ondelete="SET NULL"),nullable=True,index=True);milestone_id:Mapped[uuid.UUID|None]=mapped_column(ForeignKey("milestones.id",ondelete="SET NULL"),nullable=True,index=True)
-    title:Mapped[str]=mapped_column(String(250));completed:Mapped[bool]=mapped_column(Boolean,default=False);position:Mapped[int]=mapped_column(Integer,default=0)
+    title:Mapped[str]=mapped_column(String(250));completed:Mapped[bool]=mapped_column(Boolean,default=False);status:Mapped[str]=mapped_column(String(30),default="Pending");estimated_minutes:Mapped[int]=mapped_column(Integer,default=30);accumulated_seconds:Mapped[int]=mapped_column(Integer,default=0);started_at:Mapped[datetime|None]=mapped_column(DateTime(timezone=True),nullable=True);position:Mapped[int]=mapped_column(Integer,default=0)
     created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),server_default=func.now());plan:Mapped[Plan|None]=relationship(back_populates="tasks")
 
 class Project(Base):

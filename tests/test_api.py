@@ -14,3 +14,8 @@ def test_create_and_delete_task():
 def test_prompt_creates_multiple_tasks():
  r=c.post('/api/v1/tasks/from-prompt',json={'prompt':'Research options. Compare costs. Make a decision.'})
  assert r.status_code==201;assert len(r.json())==3
+def test_task_timer_lifecycle():
+ task=c.post('/api/v1/tasks',json={'title':'Timed task','estimated_minutes':45}).json()
+ assert task['estimated_minutes']==45 and task['status']=='Pending'
+ started=c.patch(f"/api/v1/tasks/{task['id']}",json={'status':'In Progress'}).json();assert started['started_at']
+ held=c.patch(f"/api/v1/tasks/{task['id']}",json={'status':'On Hold'}).json();assert held['started_at'] is None and held['status']=='On Hold'

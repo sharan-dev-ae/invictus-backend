@@ -3,7 +3,8 @@ import httpx
 from fastapi import HTTPException
 from app.core.config import get_settings
 
-SCHEMA={"type":"object","additionalProperties":False,"properties":{"project":{"anyOf":[{"type":"object","additionalProperties":False,"properties":{"title":{"type":"string"},"description":{"type":"string"}},"required":["title","description"]},{"type":"null"}]},"milestones":{"type":"array","items":{"type":"object","additionalProperties":False,"properties":{"title":{"type":"string"},"tasks":{"type":"array","items":{"type":"string"}}},"required":["title","tasks"]}},"standalone_tasks":{"type":"array","items":{"type":"string"}}},"required":["project","milestones","standalone_tasks"]}
+TASK={"type":"object","additionalProperties":False,"properties":{"title":{"type":"string"},"estimated_minutes":{"type":"integer","minimum":1,"maximum":10080}},"required":["title","estimated_minutes"]}
+SCHEMA={"type":"object","additionalProperties":False,"properties":{"project":{"anyOf":[{"type":"object","additionalProperties":False,"properties":{"title":{"type":"string"},"description":{"type":"string"}},"required":["title","description"]},{"type":"null"}]},"milestones":{"type":"array","items":{"type":"object","additionalProperties":False,"properties":{"title":{"type":"string"},"tasks":{"type":"array","items":TASK}},"required":["title","tasks"]}},"standalone_tasks":{"type":"array","items":TASK}},"required":["project","milestones","standalone_tasks"]}
 
 def plan_with_openai(prompt:str)->dict:
     settings=get_settings()

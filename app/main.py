@@ -55,8 +55,8 @@ def tasks_from_prompt(body:PromptIn,repo:Repository=Depends(get_repository),user
         created=[]
         for milestone in plan["milestones"]:
             mid=repo.create_milestone(MilestoneIn(title=milestone["title"],project_id=project_id),user.id)["id"]
-            created.extend(repo.create_task(TaskIn(title=title,project_id=project_id,milestone_id=mid),user.id) for title in milestone["tasks"])
-        created.extend(repo.create_task(TaskIn(title=title,project_id=project_id,milestone_id=body.milestone_id),user.id) for title in plan["standalone_tasks"])
+            created.extend(repo.create_task(TaskIn(**task,project_id=project_id,milestone_id=mid),user.id) for task in milestone["tasks"])
+        created.extend(repo.create_task(TaskIn(**task,project_id=project_id,milestone_id=body.milestone_id),user.id) for task in plan["standalone_tasks"])
         return created
     drafts=generate_tasks(body.prompt,body.project_id,body.milestone_id)
     if not drafts:raise HTTPException(422,"Describe at least one actionable task")
