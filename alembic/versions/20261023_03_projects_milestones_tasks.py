@@ -1,0 +1,15 @@
+"""Add flexible projects, milestones and standalone tasks."""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+revision="20261023_03";down_revision="20261023_02";branch_labels=None;depends_on=None
+def upgrade():
+    op.create_table("projects",sa.Column("id",postgresql.UUID(as_uuid=True),primary_key=True),sa.Column("owner_id",postgresql.UUID(as_uuid=True),nullable=False),sa.Column("title",sa.String(200),nullable=False),sa.Column("description",sa.Text(),nullable=False),sa.Column("status",sa.String(30),nullable=False),sa.Column("created_at",sa.DateTime(timezone=True),server_default=sa.func.now(),nullable=False),sa.Column("updated_at",sa.DateTime(timezone=True),server_default=sa.func.now(),nullable=False));op.create_index("ix_projects_owner_id","projects",["owner_id"])
+    op.create_table("milestones",sa.Column("id",postgresql.UUID(as_uuid=True),primary_key=True),sa.Column("owner_id",postgresql.UUID(as_uuid=True),nullable=False),sa.Column("project_id",postgresql.UUID(as_uuid=True),sa.ForeignKey("projects.id",ondelete="CASCADE"),nullable=True),sa.Column("title",sa.String(200),nullable=False),sa.Column("due_date",sa.Date()),sa.Column("completed",sa.Boolean(),nullable=False,server_default=sa.false()),sa.Column("created_at",sa.DateTime(timezone=True),server_default=sa.func.now(),nullable=False));op.create_index("ix_milestones_owner_id","milestones",["owner_id"]);op.create_index("ix_milestones_project_id","milestones",["project_id"])
+    op.alter_column("tasks","plan_id",existing_type=postgresql.UUID(),nullable=True);op.drop_constraint("tasks_plan_id_fkey","tasks",type_="foreignkey");op.create_foreign_key("tasks_plan_id_fkey","tasks","plans",["plan_id"],["id"],ondelete="SET NULL")
+    op.add_column("tasks",sa.Column("owner_id",postgresql.UUID(as_uuid=True),nullable=True));op.add_column("tasks",sa.Column("project_id",postgresql.UUID(as_uuid=True),nullable=True));op.add_column("tasks",sa.Column("milestone_id",postgresql.UUID(as_uuid=True),nullable=True));op.create_index("ix_tasks_owner_id","tasks",["owner_id"]);op.create_index("ix_tasks_project_id","tasks",["project_id"]);op.create_index("ix_tasks_milestone_id","tasks",["milestone_id"]);op.create_foreign_key("tasks_project_id_fkey","tasks","projects",["project_id"],["id"],ondelete="SET NULL");op.create_foreign_key("tasks_milestone_id_fkey","tasks","milestones",["milestone_id"],["id"],ondelete="SET NULL")
+    for table in ("projects","milestones","tasks"):
+        op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY");op.execute(f"CREATE POLICY {table}_owner_policy ON {table} FOR ALL TO authenticated USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid())")
+def downgrade():
+    for table in ("tasks","milestones","projects"):op.execute(f"DROP POLICY IF EXISTS {table}_owner_policy ON {table}")
+    op.drop_constraint("tasks_milestone_id_fkey","tasks",type_="foreignkey");op.drop_constraint("tasks_project_id_fkey","tasks",type_="foreignkey");op.drop_column("tasks","milestone_id");op.drop_column("tasks","project_id");op.drop_column("tasks","owner_id");op.drop_table("milestones");op.drop_table("projects")
