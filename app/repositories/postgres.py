@@ -64,3 +64,7 @@ class PostgresRepository:
         for key in ("project_id","milestone_id"):
             if key in changes:setattr(x,key,UUID(changes[key]) if changes[key] else None)
         self.session.commit();self.session.refresh(x);return self._task(x)
+    def delete_task(self,task_id,owner_id):
+        x=self.session.scalar(select(Task).where(Task.id==UUID(task_id),Task.owner_id==UUID(owner_id)))
+        if not x:return False
+        self.session.delete(x);self.session.commit();return True

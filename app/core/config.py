@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     supabase_url: str = "https://jdlaylyoixxkcrhftofg.supabase.co"
     supabase_anon_key: str | None = None
     auth_required: bool = True
+    planner_provider: str = "rules"
+    openai_api_key: str | None = None
+    openai_model: str = "gpt-4o-mini"
     cors_origins: str = "http://localhost:5173"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

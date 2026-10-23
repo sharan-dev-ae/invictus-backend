@@ -8,6 +8,7 @@ from app.repositories.base import Repository
 from app.schemas import BucketIn,PlanIn
 from app.schemas import SignInIn,SignUpIn,ProjectIn,MilestoneIn,TaskIn,PromptIn
 from app.planner import generate_tasks
+from app.ai_planner import plan_with_openai
 from app.auth import CurrentUser,auth_request,current_user
 
 settings=get_settings();app=FastAPI(title="Invictus Personal Command Center",version="1.0.0")
@@ -43,8 +44,20 @@ def update_task(task_id:str,body:dict,repo:Repository=Depends(get_repository),us
     value=repo.update_task(task_id,body,user.id)
     if not value:raise HTTPException(404,"Task not found")
     return value
+@app.delete("/api/v1/tasks/{task_id}",status_code=204)
+def delete_task(task_id:str,repo:Repository=Depends(get_repository),user:CurrentUser=Depends(current_user)):
+    if not repo.delete_task(task_id,user.id):raise HTTPException(404,"Task not found")
 @app.post("/api/v1/tasks/from-prompt",status_code=201)
 def tasks_from_prompt(body:PromptIn,repo:Repository=Depends(get_repository),user:CurrentUser=Depends(current_user)):
+    if settings.planner_provider=="openai":
+        plan=plan_with_openai(body.prompt);project_id=body.project_id
+        if plan["project"] and not project_id:project_id=repo.create_project(ProjectIn(**plan["project"]),user.id)["id"]
+        created=[]
+        for milestone in plan["milestones"]:
+            mid=repo.create_milestone(MilestoneIn(title=milestone["title"],project_id=project_id),user.id)["id"]
+            created.extend(repo.create_task(TaskIn(title=title,project_id=project_id,milestone_id=mid),user.id) for title in milestone["tasks"])
+        created.extend(repo.create_task(TaskIn(title=title,project_id=project_id,milestone_id=body.milestone_id),user.id) for title in plan["standalone_tasks"])
+        return created
     drafts=generate_tasks(body.prompt,body.project_id,body.milestone_id)
     if not drafts:raise HTTPException(422,"Describe at least one actionable task")
     return [repo.create_task(x,user.id) for x in drafts]

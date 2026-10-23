@@ -37,3 +37,5 @@ class MemoryRepository:
         x=next((x for x in self.tasks if x["id"]==task_id),None)
         if x:x.update(changes)
         return x
+    def delete_task(self,task_id,owner_id):
+        before=len(self.tasks);self.tasks=[x for x in self.tasks if x["id"]!=task_id];return len(self.tasks)<before
