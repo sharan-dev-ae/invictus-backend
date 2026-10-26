@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
     cors_origins: str = "http://localhost:5173"
+    keep_alive_url: str | None = None
+    keep_alive_interval_seconds: int = 600
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property

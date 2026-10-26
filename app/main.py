@@ -1,3 +1,6 @@
+import asyncio
+from contextlib import asynccontextmanager,suppress
+import httpx
 from fastapi import Depends,FastAPI,HTTPException,Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -11,7 +14,25 @@ from app.planner import generate_tasks
 from app.ai_planner import plan_with_openai
 from app.auth import CurrentUser,auth_request,current_user
 
-settings=get_settings();app=FastAPI(title="Invictus Personal Command Center",version="1.0.0")
+settings=get_settings()
+
+async def keep_alive(url:str,interval_seconds:int):
+    while True:
+        await asyncio.sleep(interval_seconds)
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:await client.get(url)
+        except httpx.HTTPError:
+            pass
+
+@asynccontextmanager
+async def lifespan(_:FastAPI):
+    task=asyncio.create_task(keep_alive(settings.keep_alive_url,settings.keep_alive_interval_seconds)) if settings.keep_alive_url else None
+    yield
+    if task:
+        task.cancel()
+        with suppress(asyncio.CancelledError):await task
+
+app=FastAPI(title="Invictus Personal Command Center",version="1.0.0",lifespan=lifespan)
 app.add_middleware(CORSMiddleware,allow_origins=settings.cors_origin_list,allow_methods=["*"],allow_headers=["*"])
 @app.exception_handler(SQLAlchemyError)
 async def database_error(_:Request,exc:SQLAlchemyError):return JSONResponse(status_code=503,content={"detail":"Database operation failed"})
